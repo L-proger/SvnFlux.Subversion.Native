@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Diagnostics;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -5,6 +6,10 @@ using SharpCompress.Readers;
 namespace SvnFlux.Subversion.Native.Build;
 
 internal static class Infrastructure {
+    private static readonly Dictionary<string, string> BaseEnvironment = CaptureCurrentEnvironment();
+    private static readonly HashSet<string> VisualStudioVariables = new(StringComparer.OrdinalIgnoreCase);
+    private static readonly List<string> ToolDirectories = [];
+
     public static async Task<string> DownloadAndExtractAsync(SourceArchive source, string downloadsDirectory, string sourcesDirectory, CancellationToken cancellationToken) {
         var destination = Path.Combine(sourcesDirectory, source.DirectoryName);
         if (Directory.Exists(destination)) {
@@ -68,13 +73,30 @@ internal static class Infrastructure {
             throw new InvalidOperationException("Visual Studio with the x64 C++ toolchain was not found.");
         }
         var vcvars = Path.Combine(installation, "VC", "Auxiliary", "Build", "vcvarsall.bat");
-        var environment = CaptureCommand($"\"{vcvars}\" {architecture} >nul && set");
-        foreach (var line in environment.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)) {
+        var output = CaptureCommand($"\"{vcvars}\" {architecture} >nul && set", BaseEnvironment);
+        var environment = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var line in output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries)) {
             var separator = line.IndexOf('=');
             if (separator > 0) {
-                Environment.SetEnvironmentVariable(line[..separator], line[(separator + 1)..]);
+                environment[line[..separator]] = line[(separator + 1)..];
             }
         }
+        foreach (var name in VisualStudioVariables) {
+            Environment.SetEnvironmentVariable(name, null);
+        }
+        VisualStudioVariables.Clear();
+        foreach (var (name, value) in environment) {
+            Environment.SetEnvironmentVariable(name, value);
+            VisualStudioVariables.Add(name);
+        }
+        ApplyToolDirectories();
+    }
+
+    public static void AddToolDirectory(string path) {
+        if (!ToolDirectories.Contains(path, StringComparer.OrdinalIgnoreCase)) {
+            ToolDirectories.Add(path);
+        }
+        ApplyToolDirectories();
     }
 
     public static void Run(string fileName, IEnumerable<string> arguments, string workingDirectory) {
@@ -99,13 +121,17 @@ internal static class Infrastructure {
         return output;
     }
 
-    private static string CaptureCommand(string command) {
+    private static string CaptureCommand(string command, IReadOnlyDictionary<string, string> environment) {
         var startInfo = new ProcessStartInfo("cmd.exe") {
             Arguments = $"/d /s /c \"{command}\"",
             UseShellExecute = false,
             RedirectStandardOutput = true,
             RedirectStandardError = true
         };
+        startInfo.Environment.Clear();
+        foreach (var (name, value) in environment) {
+            startInfo.Environment[name] = value;
+        }
         using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Could not start cmd.exe.");
         var output = process.StandardOutput.ReadToEnd();
         var error = process.StandardError.ReadToEnd();
@@ -114,6 +140,21 @@ internal static class Infrastructure {
             throw new InvalidOperationException($"cmd.exe exited with code {process.ExitCode}: {error}");
         }
         return output;
+    }
+
+    private static Dictionary<string, string> CaptureCurrentEnvironment() {
+        var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        foreach (DictionaryEntry variable in Environment.GetEnvironmentVariables()) {
+            result[(string)variable.Key] = (string)variable.Value;
+        }
+        return result;
+    }
+
+    private static void ApplyToolDirectories() {
+        var path = Environment.GetEnvironmentVariable("PATH") ?? "";
+        var entries = path.Split(Path.PathSeparator, StringSplitOptions.RemoveEmptyEntries)
+            .Where(entry => !ToolDirectories.Contains(entry, StringComparer.OrdinalIgnoreCase));
+        Environment.SetEnvironmentVariable("PATH", string.Join(Path.PathSeparator, ToolDirectories.Concat(entries)));
     }
 
     public static string FreshDirectory(string parent, string name) {

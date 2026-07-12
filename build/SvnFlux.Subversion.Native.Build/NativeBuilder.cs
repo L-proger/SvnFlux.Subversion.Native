@@ -214,8 +214,7 @@ internal sealed class NativeBuilder {
             var isolatedPython = Path.Combine(scripts, "python.exe");
             Infrastructure.Run(isolatedPython, ["-m", "pip", "install", "--disable-pip-version-check", "--no-input", "--only-binary=:all:", "SCons==" + version], repositoryRoot);
         }
-        var path = Environment.GetEnvironmentVariable("PATH") ?? "";
-        Environment.SetEnvironmentVariable("PATH", scripts + Path.PathSeparator + path);
+        Infrastructure.AddToolDirectory(scripts);
     }
 
     private static void RequireBuildTools() {

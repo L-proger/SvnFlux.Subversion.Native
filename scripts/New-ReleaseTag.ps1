@@ -6,9 +6,16 @@ $root = Split-Path $PSScriptRoot -Parent
 $catalogPath = Join-Path $root 'build/SvnFlux.Subversion.Native.Build/DependencyCatalog.cs'
 
 function Invoke-Git([string[]] $Arguments) {
-    $output = @(& git -C $root @Arguments 2>&1)
-    if ($LASTEXITCODE -ne 0) {
-        throw "git $($Arguments -join ' ') failed:`n$($output -join [Environment]::NewLine)"
+    $previousErrorActionPreference = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = 'Continue'
+        $output = @(& git -C $root @Arguments 2>&1) | ForEach-Object { $_.ToString() }
+        $exitCode = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $previousErrorActionPreference
+    }
+    if ($exitCode -ne 0) {
+        throw "git $($Arguments -join ' ') failed with exit code $exitCode`n$($output -join [Environment]::NewLine)"
     }
     return $output
 }
@@ -63,4 +70,3 @@ if ($PSCmdlet.ShouldProcess($head, "Create and push tag $tag")) {
     }
     Write-Host "Pushed $tag to origin."
 }
-
