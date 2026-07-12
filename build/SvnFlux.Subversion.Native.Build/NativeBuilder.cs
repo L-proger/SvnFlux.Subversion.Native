@@ -136,7 +136,7 @@ internal sealed class NativeBuilder {
             File.WriteAllText(sconstruct, text);
             Infrastructure.RequireTool("cl");
             var common = new[] { $"APR={Forward(apr)}", $"APU={Forward(apr)}", $"ZLIB={Forward(zlib)}", $"OPENSSL={Forward(openssl)}", "SOURCE_LAYOUT=0", $"TARGET_ARCH={target.SconsArchitecture}", $"PREFIX={Forward(install)}", $"LIBDIR={Forward(Path.Combine(install, "lib"))}" };
-            Infrastructure.Run(Infrastructure.RequireTool("scons"), common, source);
+            File.Delete(Path.Combine(source, ".saved_config"));
             Infrastructure.Run(Infrastructure.RequireTool("scons"), [.. common, "install"], source);
         }
         return install;
