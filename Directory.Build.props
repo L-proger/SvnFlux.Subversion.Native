@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <Authors>Sergey Serb</Authors>
+    <Company>SvnFlux</Company>
+    <Product>SvnFlux.Subversion.Native</Product>
+    <VersionPrefix>1.16.0-dev.0</VersionPrefix>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/L-proger/SvnFlux.Subversion.Native</RepositoryUrl>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <Deterministic>true</Deterministic>
+  </PropertyGroup>
+</Project>
+

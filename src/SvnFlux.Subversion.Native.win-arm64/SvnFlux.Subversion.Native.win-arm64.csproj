@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PackageId>SvnFlux.Subversion.Native.win-arm64</PackageId>
+    <Description>Native Apache Subversion runtime libraries for SvnFlux on Windows ARM64.</Description>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <NativeOutput Condition="'$(NativeOutput)' == ''">$(MSBuildThisFileDirectory)..\..\artifacts\native\win-arm64</NativeOutput>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Remove="$(MSBuildProjectDirectory)\..\..\..\README.md" />
+    <None Include="$(NativeOutput)\**\*.dll" Pack="true" PackagePath="runtimes/win-arm64/native" />
+    <None Include="$(MSBuildThisFileDirectory)..\..\README.md" Pack="true" PackagePath="README.md" />
+  </ItemGroup>
+  <Target Name="RequireNativeRuntime" BeforeTargets="Pack">
+    <Error Condition="!Exists('$(NativeOutput)\libsvn_client-1.dll')" Text="Native runtime is missing. Run SvnFlux.Subversion.Native.Build --rid win-arm64 first." />
+  </Target>
+</Project>
