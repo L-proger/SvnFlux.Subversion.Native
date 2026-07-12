@@ -125,13 +125,17 @@ internal sealed class NativeBuilder {
         var install = Path.Combine(InstallRoot, "serf");
         if (!skipDependencies) {
             var sconstruct = Path.Combine(source, "SConstruct");
-            var text = File.ReadAllText(sconstruct)
+            var text = File.ReadAllText(sconstruct);
+            text = text
                 .Replace("$OPENSSL/include/openssl", "$OPENSSL/include", StringComparison.Ordinal)
                 .Replace("allowed_values=('x86', 'x86_64', 'ia64')", "allowed_values=('x86', 'x86_64', 'arm64', 'ia64')", StringComparison.Ordinal)
-                .Replace("'X64'  : 'x86_64'", "'X64'  : 'x86_64',\n                      'ARM64': 'arm64',\n                      'arm64': 'arm64'", StringComparison.Ordinal)
                 .Replace("env.get('TARGET_ARCH', None) == 'x86_64'", "env.get('TARGET_ARCH', None) in ('x86_64', 'arm64')", StringComparison.Ordinal);
+            if (!text.Contains("'ARM64': 'arm64'", StringComparison.Ordinal)) {
+                text = text.Replace("'X64'  : 'x86_64'", "'X64'  : 'x86_64',\n                      'ARM64': 'arm64',\n                      'arm64': 'arm64'", StringComparison.Ordinal);
+            }
             File.WriteAllText(sconstruct, text);
-            var common = new[] { $"APR={Forward(apr)}", $"APU={Forward(apr)}", $"ZLIB={Forward(zlib)}", $"OPENSSL={Forward(openssl)}", "SOURCE_LAYOUT=0", $"TARGET_ARCH={target.SconsArchitecture}", "MSVC_VERSION=2022", $"PREFIX={Forward(install)}", $"LIBDIR={Forward(Path.Combine(install, "lib"))}" };
+            Infrastructure.RequireTool("cl");
+            var common = new[] { $"APR={Forward(apr)}", $"APU={Forward(apr)}", $"ZLIB={Forward(zlib)}", $"OPENSSL={Forward(openssl)}", "SOURCE_LAYOUT=0", $"TARGET_ARCH={target.SconsArchitecture}", $"PREFIX={Forward(install)}", $"LIBDIR={Forward(Path.Combine(install, "lib"))}" };
             Infrastructure.Run(Infrastructure.RequireTool("scons"), common, source);
             Infrastructure.Run(Infrastructure.RequireTool("scons"), [.. common, "install"], source);
         }
