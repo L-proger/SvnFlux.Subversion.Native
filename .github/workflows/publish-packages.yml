@@ -149,8 +149,11 @@ jobs:
       - name: Publish to GitHub Packages
         if: github.event_name == 'push' || inputs.publish
         shell: pwsh
-        run: >-
-          dotnet nuget push artifacts/packages/SvnFlux.Subversion.*.nupkg
-          --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
-          --api-key "${{ secrets.GITHUB_TOKEN }}"
-          --skip-duplicate
+        run: |
+          Get-ChildItem artifacts/packages/SvnFlux.Subversion.*.nupkg -ErrorAction Stop | ForEach-Object {
+            dotnet nuget push $_.FullName `
+              --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" `
+              --api-key "${{ secrets.GITHUB_TOKEN }}" `
+              --skip-duplicate
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
