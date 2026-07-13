@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <NoWarn>$(NoWarn);CS0618;CS0649;CS8500;CS8981</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\SvnFlux.Subversion.Interop\NativeTypeNameAttribute.cs" Link="NativeTypeNameAttribute.cs" />
+  </ItemGroup>
+  <Target Name="RequireGeneratedBindings" BeforeTargets="CoreCompile">
+    <Error Condition="!Exists('$(MSBuildProjectDirectory)\Generated\libsvn_client_1.g.cs')" Text="Generated win-arm64 bindings are missing. Build the native DLLs, then run scripts/Generate-Bindings.ps1 -Rid win-arm64." />
+  </Target>
+</Project>

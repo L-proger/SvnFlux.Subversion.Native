@@ -4,4 +4,4 @@ artifacts/
 **/obj/
 .vs/
 .vscode/
-
+src/SvnFlux.Subversion.Interop.win-*/Generated/

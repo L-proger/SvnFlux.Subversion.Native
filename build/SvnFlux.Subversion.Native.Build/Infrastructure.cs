@@ -145,7 +145,9 @@ internal static class Infrastructure {
     private static Dictionary<string, string> CaptureCurrentEnvironment() {
         var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         foreach (DictionaryEntry variable in Environment.GetEnvironmentVariables()) {
-            result[(string)variable.Key] = (string)variable.Value;
+            if (variable.Key is string name && variable.Value is string value) {
+                result[name] = value;
+            }
         }
         return result;
     }

@@ -2,7 +2,7 @@
 
 Personal build infrastructure for experimenting with native Apache Subversion libraries from C#. It is public and can be useful to others, but makes no promises about support, compatibility, release cadence, or production readiness.
 
-The supported runtimes are `win-x64` and `win-arm64`. Subversion and most dependencies are built from source with MSVC; OpenSSL comes from the pinned `openssl-native` NuGet package. No DLLs are taken from an installed SVN client.
+The repository produces the managed `SvnFlux.Subversion` wrapper together with its `win-x64` and `win-arm64` native runtime packages. Subversion and most dependencies are built from source with MSVC; OpenSSL comes from the pinned `openssl-native` NuGet package. No DLLs are taken from an installed SVN client.
 
 The Subversion source is pinned to trunk commit `6e6a9b0ddf0d745be7b56f6f1804fbc8216bd067`. It is a development snapshot rather than an official stable release; the modern CMake build is intentionally preferred over historical Windows build pipelines.
 
@@ -26,6 +26,16 @@ Validate a completed build with:
 ./scripts/Verify-NativeBuild.ps1 -Rid win-x64
 ./scripts/Verify-NativeBuild.ps1 -Rid win-arm64
 ```
+
+## Generate Windows bindings
+
+After building both native targets and restoring the local .NET tools, generate the two independent P/Invoke wrappers with:
+
+```powershell
+./scripts/Generate-Bindings.ps1
+```
+
+The generator parses the public SVN/APR headers separately for each RID and uses `dumpbin /exports` to assign every generated function to its exact DLL. Each interop project gets one function file per DLL plus its own platform-specific types. Generated files are build outputs and are not committed. CI regenerates them immediately after building each RID's native DLLs. Export diagnostics are written below `.build/<rid>/bindings`.
 
 ## Packages and tags
 

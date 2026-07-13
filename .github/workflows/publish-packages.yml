@@ -78,6 +78,16 @@ jobs:
         shell: pwsh
         run: ./scripts/Verify-NativeBuild.ps1 -Rid ${{ matrix.rid }}
 
+      - name: Restore binding generator
+        run: dotnet tool restore
+
+      - name: Generate P/Invoke bindings
+        shell: pwsh
+        run: ./scripts/Generate-Bindings.ps1 -Rid ${{ matrix.rid }}
+
+      - name: Build P/Invoke wrapper
+        run: dotnet build src/SvnFlux.Subversion.Interop.${{ matrix.rid }}/SvnFlux.Subversion.Interop.${{ matrix.rid }}.csproj -c Release
+
       - name: Upload package artifact
         uses: actions/upload-artifact@v6
         with:
@@ -96,3 +106,51 @@ jobs:
               --skip-duplicate
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
+
+  wrapper:
+    needs: build
+    runs-on: windows-2025
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install .NET 10
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Select package version
+        id: version
+        shell: pwsh
+        run: |
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+            $version = '${{ inputs.version }}'
+          } else {
+            $version = '${{ github.ref_name }}'.Substring(4)
+          }
+          "value=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Pack managed wrapper
+        run: >-
+          dotnet pack src/SvnFlux.Subversion/SvnFlux.Subversion.csproj
+          -c Release
+          -p:PackageVersion=${{ steps.version.outputs.value }}
+          --output artifacts/packages
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: SvnFlux.Subversion
+          path: artifacts/packages/SvnFlux.Subversion.*.nupkg
+          if-no-files-found: error
+
+      - name: Publish to GitHub Packages
+        if: github.event_name == 'push' || inputs.publish
+        shell: pwsh
+        run: >-
+          dotnet nuget push artifacts/packages/SvnFlux.Subversion.*.nupkg
+          --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json"
+          --api-key "${{ secrets.GITHUB_TOKEN }}"
+          --skip-duplicate
