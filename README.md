@@ -2,7 +2,7 @@
 
 Personal build infrastructure for experimenting with native Apache Subversion libraries from C#. It is public and can be useful to others, but makes no promises about support, compatibility, release cadence, or production readiness.
 
-The repository produces the managed `SvnFlux.Subversion` wrapper together with its `win-x64` and `win-arm64` native runtime packages. Subversion and most dependencies are built from source with MSVC; OpenSSL comes from the pinned `openssl-native` NuGet package. No DLLs are taken from an installed SVN client.
+The repository produces two self-contained RID packages: `SvnFlux.Subversion.Native.win-x64` and `SvnFlux.Subversion.Native.win-arm64`. Each contains its matching native libraries and an independently generated public `SvnFlux.Subversion.dll` P/Invoke API. Subversion and most dependencies are built from source with MSVC; OpenSSL comes from the pinned `openssl-native` NuGet package. No DLLs are taken from an installed SVN client.
 
 The Subversion source is pinned to trunk commit `6e6a9b0ddf0d745be7b56f6f1804fbc8216bd067`. It is a development snapshot rather than an official stable release; the modern CMake build is intentionally preferred over historical Windows build pipelines.
 
@@ -13,12 +13,16 @@ Pinned dependencies: APR 1.7.6, APR-util 1.6.3, Serf 1.3.10, zlib 1.3.2, SQLite 
 Prerequisites: Visual Studio 2022 with C++, CMake, Ninja and Python 3. SCons is installed into the local build cache automatically. OpenSSL headers, import libraries, and runtime DLLs come from the pinned `openssl-native` NuGet package, so Perl and NASM are not required.
 
 ```powershell
-dotnet run --project build/SvnFlux.Subversion.Native.Build -c Release
+dotnet run --project build/SvnFlux.Subversion.Native.Build -c Release -- --no-pack
+dotnet tool restore
+./scripts/Generate-Bindings.ps1 -Rid win-x64
+dotnet build src/SvnFlux.Subversion.Interop.win-x64 -c Release
+dotnet pack src/SvnFlux.Subversion.Native.win-x64 -c Release --output artifacts/packages
 ```
 
 Pass `--rid win-arm64` to cross-compile for Windows ARM64. `win-x64` is the default.
 
-The result is `artifacts/packages/SvnFlux.Subversion.Native.<rid>.<version>.nupkg`. Use `--no-pack` to stop after producing `artifacts/native/<rid>`, or `--skip-dependencies` to reuse an existing dependency build.
+The result is `artifacts/packages/SvnFlux.Subversion.Native.<rid>.<version>.nupkg`. Pass `--rid win-arm64` to the native build and the matching later commands for ARM64. Use `--skip-dependencies` to reuse an existing dependency build.
 
 Validate a completed build with:
 
@@ -49,6 +53,6 @@ After committing a release-ready state, create and immediately push the next tag
 
 The script reads the SVN version and pinned commit from `DependencyCatalog.cs`, uses the current UTC date, increments the package revision for matching existing tags, and pushes the annotated tag to `origin`. It refuses to tag a dirty working tree. Use `-WhatIf` to preview the generated tag without creating or pushing it.
 
-Consumers add the GitHub NuGet source and reference the RID packages from a managed wrapper. Each package contains only its matching `runtimes/<rid>/native` assets.
+Consumers add the GitHub NuGet source and reference the package matching their build RID. Each package contains `lib/net10.0/SvnFlux.Subversion.dll` and its matching `runtimes/<rid>/native` assets. There is no shared third package; platform-specific API differences remain visible to consumers and may be handled with conditional compilation.
 
 Downloaded and compiled trees live below `.build` and are not committed.

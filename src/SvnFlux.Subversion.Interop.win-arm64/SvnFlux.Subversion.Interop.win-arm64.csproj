@@ -4,6 +4,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <AssemblyName>SvnFlux.Subversion</AssemblyName>
     <NoWarn>$(NoWarn);CS0618;CS0649;CS8500;CS8981</NoWarn>
   </PropertyGroup>
   <ItemGroup>

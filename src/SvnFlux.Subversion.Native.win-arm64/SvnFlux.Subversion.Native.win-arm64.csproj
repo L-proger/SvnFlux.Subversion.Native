@@ -4,15 +4,17 @@
     <PackageId>SvnFlux.Subversion.Native.win-arm64</PackageId>
     <Description>Native Apache Subversion runtime libraries for SvnFlux on Windows ARM64.</Description>
     <IncludeBuildOutput>false</IncludeBuildOutput>
-    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     <NativeOutput Condition="'$(NativeOutput)' == ''">$(MSBuildThisFileDirectory)..\..\artifacts\native\win-arm64</NativeOutput>
+    <ManagedOutput Condition="'$(ManagedOutput)' == ''">$(MSBuildThisFileDirectory)..\SvnFlux.Subversion.Interop.win-arm64\bin\$(Configuration)\net10.0\SvnFlux.Subversion.dll</ManagedOutput>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="$(MSBuildProjectDirectory)\..\..\..\README.md" />
     <None Include="$(NativeOutput)\**\*.dll" Pack="true" PackagePath="runtimes/win-arm64/native" />
+    <None Include="$(ManagedOutput)" Pack="true" PackagePath="lib/net10.0/SvnFlux.Subversion.dll" />
     <None Include="$(MSBuildThisFileDirectory)..\..\README.md" Pack="true" PackagePath="README.md" />
   </ItemGroup>
   <Target Name="RequireNativeRuntime" BeforeTargets="Pack">
     <Error Condition="!Exists('$(NativeOutput)\libsvn_client-1.dll')" Text="Native runtime is missing. Run SvnFlux.Subversion.Native.Build --rid win-arm64 first." />
+    <Error Condition="!Exists('$(ManagedOutput)')" Text="Managed P/Invoke wrapper is missing. Generate and build the win-arm64 bindings first." />
   </Target>
 </Project>

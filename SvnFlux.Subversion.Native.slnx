@@ -4,7 +4,6 @@
     <Project Path="src/SvnFlux.Subversion.Interop.win-arm64/SvnFlux.Subversion.Interop.win-arm64.csproj" />
     <Project Path="src/SvnFlux.Subversion.Native.win-x64/SvnFlux.Subversion.Native.win-x64.csproj" />
     <Project Path="src/SvnFlux.Subversion.Native.win-arm64/SvnFlux.Subversion.Native.win-arm64.csproj" />
-    <Project Path="src/SvnFlux.Subversion/SvnFlux.Subversion.csproj" />
   </Folder>
   <Folder Name="/tools/">
     <Project Path="build/SvnFlux.Subversion.Bindings/SvnFlux.Subversion.Bindings.csproj" />
